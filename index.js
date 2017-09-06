@@ -13,6 +13,24 @@ const parser = csv.parse({}, function(err, data){
     .map(vals => new Sighting(vals))
     .filter(s => !!s.dateOccurred);
 
+  displayBiggestYear(sightings);
+  displayMostPopularSeason(sightings);
+});
+
+function findTopFromObject(obj) {
+  return Object.keys(obj).reduce((a, key) => {
+    if (!a || a.count < obj[key]) {
+      a = {
+        key: key,
+        count: obj[key],
+      };
+    }
+
+    return a;
+  }, null);
+}
+
+function displayBiggestYear(sightings) {
   // What year had the most sightings?
   const yearCounts = sightings.reduce((a, s) => {
     const year = s.dateOccurred.year();
@@ -21,18 +39,34 @@ const parser = csv.parse({}, function(err, data){
     return a;
   }, {});
 
-  const max = Object.keys(yearCounts).reduce((a, key) => {
-    if (!a || a.count < yearCounts[key]) {
-      a = {
-        year: key,
-        count: yearCounts[key],
-      };
+  const max = findTopFromObject(yearCounts);
+  console.log('Most sightings in year ' + max.key + ' - ' + max.count);
+}
+
+function displayMostPopularSeason(sightings) {
+  function findSeason(s) {
+    const month = s.dateOccurred.month();
+
+    if (month < 3 || month > 11) {
+      return 'winter';
+    } else if (month >= 3 && month <= 5) {
+      return 'spring';
+    } else if (month >= 6 && month <= 8) {
+      return 'summer';
     }
 
-    return a;
-  }, null);
+    return 'fall';
+  }
 
-  console.log('Most sightings in year ' + max.year + ' - ' + max.count);
-});
+  const seasonCounts = sightings.reduce((a, s) => {
+    const season = findSeason(s);
+
+    a[season]++;
+
+    return a;
+  }, {spring: 0, summer: 0, fall: 0, winter: 0});
+
+  console.log(seasonCounts);
+}
 
 fs.createReadStream('scrubbed.csv').pipe(parser);
