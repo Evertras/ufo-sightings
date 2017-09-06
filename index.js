@@ -4,17 +4,20 @@ const csv = require('csv');
 const fs = require('fs');
 const moment = require('moment');
 const Sighting = require('./sighting');
-
-let sightings = [];
+const statePops = require('./statePops');
+const stats = require('stats-lite');
 
 const parser = csv.parse({}, function(err, data){
-  sightings = data
+  const sightings = data
     .slice(1)
     .map(vals => new Sighting(vals))
     .filter(s => !!s.dateOccurred);
 
   displayBiggestYear(sightings);
   displayMostPopularSeason(sightings);
+  displayMostCommonShape(sightings);
+  displayCraziestStatePerCapita(sightings);
+  displayDurationInfo(sightings);
 });
 
 function findTopFromObject(obj) {
@@ -66,7 +69,46 @@ function displayMostPopularSeason(sightings) {
     return a;
   }, {spring: 0, summer: 0, fall: 0, winter: 0});
 
+  console.log('Seasons');
   console.log(seasonCounts);
+}
+
+function displayMostCommonShape(sightings) {
+  const shapeCounts = sightings.reduce((a, s) => {
+    a[s.shape] = a[s.shape] || 0;
+    a[s.shape]++;
+    return a;
+  }, {});
+
+  const maxShape = findTopFromObject(shapeCounts);
+
+  console.log('Most common shape');
+  console.log(maxShape.key + ' - ' + maxShape.count);
+}
+
+function displayCraziestStatePerCapita(sightings) {
+  const stateCounts = sightings
+    .filter(s => s.state)
+    .reduce((a, s) => {
+      if (statePops[s.state]) {
+        a[s.state] = a[s.state] || 0;
+        a[s.state] += 1.0 / statePops[s.state];
+      }
+      return a;
+    }, {});
+
+  const craziestState = findTopFromObject(stateCounts);
+  console.log('Craziest state: ' + craziestState.key);
+}
+
+function displayDurationInfo(sightings) {
+  const durations = sightings.map(s => s.durationSeconds);
+
+  const median = stats.median(durations);
+  const dev = stats.stdev(durations);
+
+  console.log('Median duration in seconds: ' + median);
+  console.log('Standard deviation: ' + dev);
 }
 
 fs.createReadStream('scrubbed.csv').pipe(parser);

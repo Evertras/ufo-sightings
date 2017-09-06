@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Evertras/ufo-sightings#readme",
   "dependencies": {
     "csv": "^1.1.1",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "stats-lite": "^2.1.0"
   }
 }
